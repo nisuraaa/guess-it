@@ -24,6 +24,9 @@ public class SocketConnectionHandler extends TextWebSocketHandler {
     @Autowired
     private GameService gameService;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     List<WebSocketSession> webSocketSessions = Collections.synchronizedList(new ArrayList<>());
 
     private final Map<String, Long> lastRequestTime = new ConcurrentHashMap<>();
@@ -55,7 +58,6 @@ public class SocketConnectionHandler extends TextWebSocketHandler {
         Long lastRequest = lastRequestTime.get(sessionId);
         long now = System.currentTimeMillis();
         if (lastRequest != null && (now - lastRequest) < RATE_LIMIT_MS) {
-            ObjectMapper objectMapper = new ObjectMapper();
             String response = objectMapper
                     .writeValueAsString(Map.of("success", false, "message", "Rate limit exceeded", "action", "ERROR"));
             session.sendMessage(new TextMessage(response));
@@ -63,7 +65,6 @@ public class SocketConnectionHandler extends TextWebSocketHandler {
         }
         lastRequestTime.put(sessionId, now);
 
-        ObjectMapper objectMapper = new ObjectMapper();
         WebSocketMessageDTO dto = objectMapper.readValue(message.getPayload().toString(), WebSocketMessageDTO.class);
 
         if ("SET_SECRET".equals(dto.action)) {
