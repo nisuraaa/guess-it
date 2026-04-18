@@ -28,6 +28,6 @@ public class WebSocketConfig
         // domains can also access the socket
         webSocketHandlerRegistry
                 .addHandler(socketConnectionHandler, "/hello")
-                .setAllowedOrigins("http://localhost:3000", "http://localhost:8080");
+                .setAllowedOrigins("https://guess-it-fe-production.up.railway.app");
     }
 }
