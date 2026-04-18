@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:8080" })
+@CrossOrigin(origins = { "https://guess-it-fe-production.up.railway.app", "http://localhost:8080" })
 @RequestMapping("/api")
 public class GameController {
 
