@@ -61,7 +61,7 @@ public class GameService {
                 throw new GameException("Player 1 already set their secret number");
             }
             room.setPlayer1Secret(secretNumber);
-        } else if (room.getPlayer2().equals(playerCode)) {
+        } else if (room.getPlayer2() != null && room.getPlayer2().equals(playerCode)) {
             if (room.getPlayer2Secret() != null) {
                 throw new GameException("Player 2 already set their secret number");
             }
