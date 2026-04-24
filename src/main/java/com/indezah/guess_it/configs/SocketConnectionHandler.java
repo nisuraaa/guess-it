@@ -72,10 +72,10 @@ public class SocketConnectionHandler extends TextWebSocketHandler {
                 SetSecretNumberResponseDTO result = gameService.setSecretNumber(dto.secretNumber, dto.roomCode,
                         dto.playerCode);
 
-                if (result.isSecretNumberReady()) {
-                    String response = objectMapper.writeValueAsString(Map.of("success", result.isSecretNumberReady(),
+                if (result.secretNumberReady()) {
+                    String response = objectMapper.writeValueAsString(Map.of("success", result.secretNumberReady(),
                             "message", "Secret number set successfully", "action", "SECRET_SET", "playerTurn",
-                            result.getPlayerTurn(), "players", result.getPlayers()));
+                            result.playerTurn(), "players", result.players(), "playerNames", result.playerNames()));
                     synchronized (webSocketSessions) {
                         for (WebSocketSession s : webSocketSessions) {
                             if (s.isOpen()) {
@@ -84,7 +84,7 @@ public class SocketConnectionHandler extends TextWebSocketHandler {
                         }
                     }
                 } else {
-                    String response = objectMapper.writeValueAsString(Map.of("success", result.isSecretNumberReady(),
+                    String response = objectMapper.writeValueAsString(Map.of("success", result.secretNumberReady(),
                             "message", "Secret number not set", "action", "SECRET_SET"));
                     session.sendMessage(new TextMessage(response));
                 }

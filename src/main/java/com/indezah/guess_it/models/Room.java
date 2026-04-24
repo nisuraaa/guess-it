@@ -10,6 +10,8 @@ public class Room {
     private String roomCode;
     private String player1;
     private String player2;
+    private String player1Name;
+    private String player2Name;
     private String player1Secret;
     private String player2Secret;
     private int[] player1SecretGuesses = { 0, 0, 0, 0 };

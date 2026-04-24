@@ -24,13 +24,14 @@ public class GameService {
     @Lazy
     private SocketConnectionHandler socketConnectionHandler;
 
-    public CreateRoomDTO create() {
+    public CreateRoomDTO create(String playerName) {
         Random random = new Random();
         int code = 100000 + random.nextInt(900000);
         Room room = new Room();
         room.setRoomCode(String.valueOf(code));
-        UUID uuid = UUID.randomUUID(); // Create p1 userID
+        UUID uuid = UUID.randomUUID();
         room.setPlayer1(uuid.toString());
+        room.setPlayer1Name(playerName);
         roomStore.put(room.getRoomCode(), room);
         return new CreateRoomDTO(room.getRoomCode(), room.getPlayer1());
     }
@@ -43,12 +44,13 @@ public class GameService {
         return room;
     }
 
-    public JoinRoomSuccessDTO join(String roomCode) throws Exception {
+    public JoinRoomSuccessDTO join(String roomCode, String playerName) throws Exception {
         Room room = requireRoom(roomCode);
         if (room.getPlayer2() != null) {
             throw new GameException("Room is full");
         }
         room.setPlayer2(UUID.randomUUID().toString());
+        room.setPlayer2Name(playerName);
         return new JoinRoomSuccessDTO(room.getRoomCode(), room.getPlayer2());
     }
 
@@ -75,10 +77,13 @@ public class GameService {
         if (bothReady) {
             room.setPlayerTurn(1);
             String firstPlayer = room.getPlayer1();
+            Map<String, String> playerNames = new HashMap<>();
+            playerNames.put(room.getPlayer1(), room.getPlayer1Name());
+            playerNames.put(room.getPlayer2(), room.getPlayer2Name());
             return new SetSecretNumberResponseDTO(firstPlayer, true,
-                    new String[] { room.getPlayer1(), room.getPlayer2() });
+                    new String[] { room.getPlayer1(), room.getPlayer2() }, playerNames);
         }
-        return new SetSecretNumberResponseDTO(null, false, null);
+        return new SetSecretNumberResponseDTO(null, false, null, null);
     }
 
     private void validateSecretNumber(String secretNumber) {
