@@ -27,7 +27,7 @@ class GameServiceTest {
     // --- Helpers ---
 
     private CreateRoomDTO createRoom() {
-        return gameService.create();
+        return gameService.create("Player1");
     }
 
     /**
@@ -36,8 +36,8 @@ class GameServiceTest {
      * Returns [roomCode, player1Code, player2Code].
      */
     private String[] setupFullRoom() throws Exception {
-        CreateRoomDTO room = gameService.create();
-        JoinRoomSuccessDTO join = gameService.join(room.roomCode);
+        CreateRoomDTO room = gameService.create("Player1");
+        JoinRoomSuccessDTO join = gameService.join(room.roomCode, "Player2");
         gameService.setSecretNumber("1234", room.roomCode, room.playerCode);
         gameService.setSecretNumber("5678", room.roomCode, join.playerCode);
         return new String[]{room.roomCode, room.playerCode, join.playerCode};
@@ -69,21 +69,21 @@ class GameServiceTest {
     @Test
     void join_succeeds_andReturnsSameRoomCode() throws Exception {
         CreateRoomDTO room = createRoom();
-        JoinRoomSuccessDTO result = gameService.join(room.roomCode);
+        JoinRoomSuccessDTO result = gameService.join(room.roomCode, "Player2");
         assertThat(result.roomCode).isEqualTo(room.roomCode);
     }
 
     @Test
     void join_assignsDistinctPlayerCode() throws Exception {
         CreateRoomDTO room = createRoom();
-        JoinRoomSuccessDTO result = gameService.join(room.roomCode);
+        JoinRoomSuccessDTO result = gameService.join(room.roomCode, "Player2");
         assertThat(result.playerCode).isNotBlank();
         assertThat(result.playerCode).isNotEqualTo(room.playerCode);
     }
 
     @Test
     void join_throws_whenRoomNotFound() {
-        assertThatThrownBy(() -> gameService.join("000000"))
+        assertThatThrownBy(() -> gameService.join("000000", "Player2"))
                 .isInstanceOf(GameException.class)
                 .hasMessageContaining("Room not found");
     }
@@ -91,8 +91,8 @@ class GameServiceTest {
     @Test
     void join_throws_whenRoomIsFull() throws Exception {
         CreateRoomDTO room = createRoom();
-        gameService.join(room.roomCode);
-        assertThatThrownBy(() -> gameService.join(room.roomCode))
+        gameService.join(room.roomCode, "Player2");
+        assertThatThrownBy(() -> gameService.join(room.roomCode, "Player3"))
                 .isInstanceOf(GameException.class)
                 .hasMessageContaining("Room is full");
     }
@@ -102,43 +102,43 @@ class GameServiceTest {
     @Test
     void setSecretNumber_player1Only_notReadyYet() throws Exception {
         CreateRoomDTO room = createRoom();
-        gameService.join(room.roomCode);
+        gameService.join(room.roomCode, "Player2");
         SetSecretNumberResponseDTO result = gameService.setSecretNumber("1234", room.roomCode, room.playerCode);
-        assertThat(result.isSecretNumberReady()).isFalse();
-        assertThat(result.getPlayerTurn()).isNull();
+        assertThat(result.secretNumberReady()).isFalse();
+        assertThat(result.playerTurn()).isNull();
     }
 
     @Test
     void setSecretNumber_bothPlayers_returnsReady() throws Exception {
         CreateRoomDTO room = createRoom();
-        JoinRoomSuccessDTO join = gameService.join(room.roomCode);
+        JoinRoomSuccessDTO join = gameService.join(room.roomCode, "Player2");
         gameService.setSecretNumber("1234", room.roomCode, room.playerCode);
         SetSecretNumberResponseDTO result = gameService.setSecretNumber("5678", room.roomCode, join.playerCode);
-        assertThat(result.isSecretNumberReady()).isTrue();
+        assertThat(result.secretNumberReady()).isTrue();
     }
 
     @Test
     void setSecretNumber_bothPlayers_player1GoesFirst() throws Exception {
         CreateRoomDTO room = createRoom();
-        JoinRoomSuccessDTO join = gameService.join(room.roomCode);
+        JoinRoomSuccessDTO join = gameService.join(room.roomCode, "Player2");
         gameService.setSecretNumber("1234", room.roomCode, room.playerCode);
         SetSecretNumberResponseDTO result = gameService.setSecretNumber("5678", room.roomCode, join.playerCode);
-        assertThat(result.getPlayerTurn()).isEqualTo(room.playerCode);
+        assertThat(result.playerTurn()).isEqualTo(room.playerCode);
     }
 
     @Test
     void setSecretNumber_bothPlayers_returnsAllPlayerCodes() throws Exception {
         CreateRoomDTO room = createRoom();
-        JoinRoomSuccessDTO join = gameService.join(room.roomCode);
+        JoinRoomSuccessDTO join = gameService.join(room.roomCode, "Player2");
         gameService.setSecretNumber("1234", room.roomCode, room.playerCode);
         SetSecretNumberResponseDTO result = gameService.setSecretNumber("5678", room.roomCode, join.playerCode);
-        assertThat(result.getPlayers()).containsExactlyInAnyOrder(room.playerCode, join.playerCode);
+        assertThat(result.players()).containsExactlyInAnyOrder(room.playerCode, join.playerCode);
     }
 
     @Test
     void setSecretNumber_throws_whenTooShort() throws Exception {
         CreateRoomDTO room = createRoom();
-        gameService.join(room.roomCode);
+        gameService.join(room.roomCode, "Player2");
         assertThatThrownBy(() -> gameService.setSecretNumber("12", room.roomCode, room.playerCode))
                 .isInstanceOf(GameException.class)
                 .hasMessageContaining("4 digits");
@@ -147,7 +147,7 @@ class GameServiceTest {
     @Test
     void setSecretNumber_throws_whenContainsLetters() throws Exception {
         CreateRoomDTO room = createRoom();
-        gameService.join(room.roomCode);
+        gameService.join(room.roomCode, "Player2");
         assertThatThrownBy(() -> gameService.setSecretNumber("12ab", room.roomCode, room.playerCode))
                 .isInstanceOf(GameException.class)
                 .hasMessageContaining("4 digits");
@@ -156,7 +156,7 @@ class GameServiceTest {
     @Test
     void setSecretNumber_throws_whenNull() throws Exception {
         CreateRoomDTO room = createRoom();
-        gameService.join(room.roomCode);
+        gameService.join(room.roomCode, "Player2");
         assertThatThrownBy(() -> gameService.setSecretNumber(null, room.roomCode, room.playerCode))
                 .isInstanceOf(GameException.class);
     }
@@ -164,7 +164,7 @@ class GameServiceTest {
     @Test
     void setSecretNumber_throws_whenPlayer1SetsTwice() throws Exception {
         CreateRoomDTO room = createRoom();
-        gameService.join(room.roomCode);
+        gameService.join(room.roomCode, "Player2");
         gameService.setSecretNumber("1234", room.roomCode, room.playerCode);
         assertThatThrownBy(() -> gameService.setSecretNumber("5678", room.roomCode, room.playerCode))
                 .isInstanceOf(GameException.class)
@@ -174,7 +174,7 @@ class GameServiceTest {
     @Test
     void setSecretNumber_throws_whenPlayer2SetsTwice() throws Exception {
         CreateRoomDTO room = createRoom();
-        JoinRoomSuccessDTO join = gameService.join(room.roomCode);
+        JoinRoomSuccessDTO join = gameService.join(room.roomCode, "Player2");
         gameService.setSecretNumber("5678", room.roomCode, join.playerCode);
         assertThatThrownBy(() -> gameService.setSecretNumber("1234", room.roomCode, join.playerCode))
                 .isInstanceOf(GameException.class)
